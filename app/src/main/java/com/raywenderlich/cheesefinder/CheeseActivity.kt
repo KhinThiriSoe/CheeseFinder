@@ -45,6 +45,36 @@ class CheeseActivity : BaseSearchActivity(){
 
     private lateinit var disposable: Disposable
 
+    override fun onStart() {
+        super.onStart()
+
+        val buttonClickStream = createButtonClickObservable()
+                .toFlowable(BackpressureStrategy.LATEST)
+        val textChangeStream = createTextChangeObservable()
+                .toFlowable(BackpressureStrategy.BUFFER)
+
+        val searchTextFlowable = Flowable.merge<String>(buttonClickStream, textChangeStream)
+
+        disposable = searchTextFlowable // change this line
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnNext { showProgress() }
+                .observeOn(Schedulers.io())
+                .map { cheeseSearchEngine.search(it) }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    hideProgress()
+                    showResult(it)
+                }
+
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!disposable.isDisposed) {
+            disposable.dispose()
+        }
+    }
+
     // 1
     private fun createButtonClickObservable(): Observable<String> {
         // 2
@@ -96,37 +126,4 @@ class CheeseActivity : BaseSearchActivity(){
             .debounce(1000, TimeUnit.MILLISECONDS) // add this line
 
     }
-
-    override fun onStart() {
-        super.onStart()
-
-        val buttonClickStream = createButtonClickObservable()
-                .toFlowable(BackpressureStrategy.LATEST)
-        val textChangeStream = createTextChangeObservable()
-                .toFlowable(BackpressureStrategy.BUFFER)
-
-        val searchTextFlowable = Flowable.merge<String>(buttonClickStream, textChangeStream)
-
-        disposable = searchTextFlowable // change this line
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnNext { showProgress() }
-            .observeOn(Schedulers.io())
-            .map { cheeseSearchEngine.search(it) }
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe {
-                hideProgress()
-                showResult(it)
-            }
-
-    }
-
-    override fun onStop() {
-        super.onStop()
-        if (!disposable.isDisposed) {
-            disposable.dispose()
-        }
-    }
-
-
-
 }

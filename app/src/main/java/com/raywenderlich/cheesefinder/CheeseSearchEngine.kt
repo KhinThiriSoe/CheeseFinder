@@ -30,11 +30,16 @@
 
 package com.raywenderlich.cheesefinder
 
-class CheeseSearchEngine(private val cheeses: Array<String>) {
+import android.content.Context
+import android.util.Log
+import com.raywenderlich.cheesefinder.database.Cheese
+import com.raywenderlich.cheesefinder.database.CheeseDatabase
 
-  fun search(query: String): List<String> {
-    Thread.sleep(2000)
-    return cheeses.filter { it.toLowerCase().contains(query.toLowerCase()) }
-  }
+class CheeseSearchEngine(private val context: Context) {
 
+    fun search(query: String): List<Cheese> {
+        Thread.sleep(2000)
+        Log.d("Searching", "Searching for $query")
+        return CheeseDatabase.getInstance(context).cheeseDao().findCheese("%$query%")
+    }
 }
